@@ -1,0 +1,40 @@
+---
+# tasks file for opnsense_unbound
+
+- name: Je vérifie si l'enregistrement dns de la machine existe
+  ansible.builtin.uri:
+    url: "{{ opnsense_url }}/api/unbound/settings/searchhostoverride"
+    method: POST
+    user: "{{ opnsense_user }}"
+    password: "{{ opnsense_password }}"
+    validate_certs: false
+    force_basic_auth: true
+    body_format: json
+    body:
+      current: 1
+      rowCount: 100
+      searchPhrase: "{{ dns_name }}"
+  register: check_dns
+
+- name: J'ajoute l'enregistrement unbound sur opnsense_unbound
+  ansible.builtin.uri:
+    url: "{{ opnsense_url }}/api/unbound/settings/addhostoverride"
+    method: POST
+    user: "{{ opnsense_user }}"
+    password: "{{ opnsense_password }}"
+    body_format: json
+    force_basic_auth: true
+    validate_certs: false
+    body:
+      host:
+        enabled: '1'
+        hostname: "{{ dns_name }}"
+        domain: blasi.home
+        rr: A
+        mxprio: ''
+        mx: ''
+        server: "{{ ip_serveur }}"
+        description: ''
+  when:
+    - check_dns.json.rowCount == 0
+    - check_dns | length > 0
